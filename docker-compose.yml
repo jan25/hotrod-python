@@ -1,0 +1,133 @@
+version: '3'
+
+version: '2'
+
+services:
+  # jaeger-collector:
+  #   image: jaegertracing/jaeger-collector
+  #   command: ["--log-level=debug", "--cassandra.keyspace=jaeger_v1_dc1", "--cassandra.servers=cassandra", "--collector.zipkin.http-port=9411"]
+  #   # environment:
+  #   #   - SPAN_STORAGE_TYPE=memory
+  #   ports:
+  #     - "14269"
+  #     - "14268:14268"
+  #     - "14267"
+  #     - "14250"
+  #     - "9411:9411"
+  #   restart: on-failure
+  #   depends_on:
+  #     - cassandra-schema
+
+  # jaeger-query:
+  #   image: jaegertracing/jaeger-query
+  #   command: ["--log-level=debug", "--cassandra.keyspace=jaeger_v1_dc1", "--cassandra.servers=cassandra"]
+  #   ports:
+  #     - "16686:16686"
+  #     - "16687"
+  #   restart: on-failure
+  #   # environment:
+  #   #   - SPAN_STORAGE_TYPE=memory
+  #   depends_on:
+  #     - cassandra-schema
+
+  # jaeger-agent:
+  #   image: jaegertracing/jaeger-agent
+  #   command: ["--log-level=debug", "--reporter.grpc.host-port=jaeger-collector:14250"]
+  #   ports:
+  #     - "5775:5775/udp"
+  #     - "6831:6831/udp"
+  #     - "6832:6832/udp"
+  #     - "5778:5778"
+  #   restart: on-failure
+  #   depends_on:
+  #     - jaeger-collector
+
+  # cassandra:
+  #   image: cassandra:3.9
+
+  # cassandra-schema:
+  #   image: jaegertracing/jaeger-cassandra-schema
+  #   depends_on:
+  #     - cassandra
+
+  jaeger-all-in-one:
+    image: 'jaegertracing/all-in-one:1.11'
+    environment:
+      - COLLECTOR_ZIPKIN_HTTP_PORT=9411
+    command: ["--log-level=debug"]
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686"
+      - "14268:14268"
+      - "9411:9411"
+  frontend:
+    image: 'python:3'
+    volumes:
+      - '.:/app/src'
+    command:
+      - /bin/bash
+      - -c
+      - |
+        unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY no_proxy
+        cd /app/src
+        pip install -r requirements.txt
+        uwsgi --ini services/frontend/uwsgi.ini
+        # python -m services.frontend.server
+    ports:
+      - "8080:80"
+    environment:
+      - USE_DOCKER_COMPOSE=1
+  customer:
+    image: 'python:3'
+    volumes:
+      - '.:/app/src'
+    command:
+      - /bin/bash
+      - -c
+      - |
+        unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY no_proxy
+        cd /app/src
+        pip install -r requirements.txt
+        uwsgi --ini services/customer/uwsgi.ini
+        # python -m services.customer.server
+    ports:
+      - "8081:80"
+    environment:
+      - USE_DOCKER_COMPOSE=1
+  driver:
+    image: 'python:3'
+    volumes:
+      - '.:/app/src'
+    command:
+      - /bin/bash
+      - -c
+      - |
+        unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY no_proxy
+        cd /app/src
+        pip install -r requirements.txt
+        uwsgi --ini services/driver/uwsgi.ini
+        # python -m services.driver.server
+    ports:
+      - "8082:80"
+    environment:
+      - USE_DOCKER_COMPOSE=1
+  route:
+    image: 'python:3'
+    volumes:
+      - '.:/app/src'
+    command:
+      - /bin/bash
+      - -c
+      - |
+        unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY no_proxy
+        cd /app/src
+        pip install -r requirements.txt
+        uwsgi --ini services/route/uwsgi.ini
+        # python -m services.route.server
+    ports:
+      - "8083:80"
+    environment:
+      - USE_DOCKER_COMPOSE=1

@@ -1,0 +1,5 @@
+flask
+uwsgi
+requests
+jaeger_client
+opentracing # this comes from jaeger_client already
