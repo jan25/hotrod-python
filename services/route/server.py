@@ -12,7 +12,7 @@ app = Flask(__name__)
 
 @postfork
 def postfork():
-    print (middleware.init_tracer('route'))
+    middleware.init_tracer('route')
 
 @app.before_request
 def before_request():
@@ -32,9 +32,7 @@ def handle_route(request):
     return serializer.obj_to_json(compute_route(pickup, dropoff))
 
 def compute_route(pickup, dropoff):
-    # eta = max(random.randint(2, 5), random.normalvariate(1, 3))
     eta = random.randint(2, 15)
-    print ('eta: %f' % eta)
     return client.Route(pickup=pickup, dropoff=dropoff, eta=eta)
 
 def start_server(debug):

@@ -17,6 +17,5 @@ def get_customer(customer_id):
         response_json = response.json()
         return serializer.json_to_obj(response_json)
     except Exception as e:
-        print (e)
         return 'ERROR'
     

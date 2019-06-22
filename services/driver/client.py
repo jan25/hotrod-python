@@ -18,5 +18,4 @@ def get_drivers(pickup):
             drivers[i] = serializer.json_to_obj(drivers[i])
         return drivers
     except Exception as e:
-        print (e)
         return 'ERROR'

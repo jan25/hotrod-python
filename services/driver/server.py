@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 @postfork
 def postfork():
-    print (middleware.init_tracer('driver'))
+    middleware.init_tracer('driver')
 
 @app.before_request
 def before_request():

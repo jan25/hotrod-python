@@ -11,8 +11,8 @@ I used jaeger-client to instrument the services by writing a common middleware. 
 ```
 $ docker-compose up
 ```
-- HotR.O.D. app is available at [localhost:8080](localhost:8080)
-- Jaeger UI is available at [localhost:16686](localhost:16686)
+- HotR.O.D. app will be available at [localhost:8080](localhost:8080)
+- Jaeger UI will be available at [localhost:16686](localhost:16686)
 ------------------------
 ### Todo
 - [x] setup services and connect them
