@@ -18,6 +18,7 @@ def before_request(request):
 
 
 def _before_request(request, tracer):
+    operation_name = '%s %s' % (request.method, request.path)
     span_context = tracer.extract(
         format=Format.HTTP_HEADERS,
         carrier=request.headers,
@@ -26,12 +27,14 @@ def _before_request(request, tracer):
     # If span_context: # FINDWHY this didn't work
     if span_context and span_context.has_trace:
         span = tracer.start_span(
-            operation_name=request.path,
+            operation_name=operation_name,
             child_of=span_context)
     else:
         span = tracer.start_span(
-            operation_name=request.path
+            operation_name=operation_name
         )
+    print('===================================================================')
+    print('before_request span: ', span)
     span.set_tag('http.url', request.full_path)
 
     return span
@@ -40,6 +43,7 @@ def _before_request(request, tracer):
 def after_request(response):
     tracer = opentracing.global_tracer()    
     span = tracer.active_span
+    print('after_request closing span: ', span)
     if span:
         tracer.scope_manager.active.close()
     # FINDWHY below thing didn't close span
@@ -52,24 +56,33 @@ def after_request(response):
 
 
 def http_get(uri, service_name='default-service'):
-    # create and serialize a child span and use it as context manager
     current_span = opentracing.global_tracer().active_span
     span, headers = before_http_request(request_uri=uri,
                                         current_span=current_span,
-                                        service_name=service_name)
+                                        service_name=service_name,
+                                        method='GET')
 
     headers = headers or {}
     with span:
+        print ('outbound_span: ', span)
         return requests.get(uri, headers=headers)
+    print('WARN: could not create span')
     return requests.get(uri)
 
 
-def before_http_request(request_uri, current_span, service_name):
+def http_post(uri, body, service_name='default-service'):
+    pass
+
+
+def before_http_request(request_uri, current_span, service_name, method='UNKNOWN'):
+    operation_name = '%s %s' % (method, request_uri)
+
     outbound_span = opentracing.global_tracer().start_span(
-        operation_name=request_uri,
+        operation_name=operation_name,
         child_of=current_span
     )
 
+    outbound_span.set_tag('http.method', method)
     outbound_span.set_tag('http.url', request_uri)
     if service_name:
         outbound_span.set_tag(tags.PEER_SERVICE, service_name)
@@ -89,13 +102,18 @@ def before_http_request(request_uri, current_span, service_name):
 def init_tracer(service_name):
     JAEGER_HOST = config.JAEGER_HOST
 
-    jaeger_config = Config(config={'sampler': {'type': 'const', 'param': 1},
-                                'logging': True,
-                                'reporter_flush_interval': 1,
-                                'local_agent': {
-                                    'reporting_host': JAEGER_HOST
-                                    # 'reporting_host': 'localhost'
-                                }
-                            },
-                            service_name=service_name)
+    jaeger_config = Config(
+        config={
+            'sampler': {
+                'type': 'const', 'param': 1
+            },
+            'logging': True,
+            # 'reporter_flush_interval': 1,
+            'local_agent': {
+                'reporting_host': JAEGER_HOST
+            }
+        },
+        service_name=service_name,
+        validate=True
+    )
     jaeger_config.initialize_tracer()
